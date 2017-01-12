@@ -19,7 +19,7 @@ private ["_units","_unit","_faction","_known","_excludeFactions","_unitClasses"]
 
 // The default gear type picked when no corresponding entry is found in the _unitClasses array
 // Set _defaultclass to "" to let these units keep their default gear
-_defaultclass = "";
+_defaultclass = "r";
 
 // The factions that should be ignored
 _excludeFactions = ["civ_f","blu_gen_f"];

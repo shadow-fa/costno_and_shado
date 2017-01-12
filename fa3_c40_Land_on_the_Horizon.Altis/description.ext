@@ -113,14 +113,14 @@ class Params
 		title = "Additional fake markers";
 		values[] = {0,1};
 		texts[] = {"None","1-2"};
-		default = 1;
+		default = 0;
 	};
 	class f_param_number_of_objectives
 	{
 		title = "Number of objectives";
 		values[] = {1,2,3,4,5,6,7,8,9,10};
 		texts[] = {"1","2","3","4","5","6","7","8","9","10"};
-		default = 6;
+		default = 5;
 	};
 	class f_param_objectives_configuration
 	{
@@ -256,7 +256,7 @@ class Params
 		texts[] = {$STR_f_param_AISkill_Option0,$STR_f_param_AISkill_Option1,$STR_f_param_AISkill_Option2,$STR_f_param_AISkill_Option3};
 		default = 2;
 	};
-/*
+
 	class f_param_AISkill_OPFOR
 	{
 		title = "$STR_f_param_AISkill_OPFOR";
@@ -264,7 +264,7 @@ class Params
 		texts[] = {$STR_f_param_AISkill_Option0,$STR_f_param_AISkill_Option1,$STR_f_param_AISkill_Option2,$STR_f_param_AISkill_Option3};
 		default = 1;
 	};
-
+/*
 	class f_param_AISkill_INDP
 	{
 		title = "$STR_f_param_AISkill_INDP";
@@ -282,7 +282,7 @@ class Params
 	{
 		title = "Cache AI outside distance (m)";
 		values[] = {0,600,800,1000,1500,2000};
-		default = 2000;
+		default = 0;
 	};
 
 // ============================================================================================

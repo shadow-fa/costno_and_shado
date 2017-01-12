@@ -27,7 +27,7 @@ private "_enemy_classes";
 //_enemy_classes = ["O_Soldier_lite_F","O_Soldier_F"]; // CSAT
 //_enemy_classes = ["I_Soldier_lite_F","I_Soldier_F"]; // AAF
 //_enemy_classes = ["B_G_Soldier_lite_F", "B_G_Soldier_F"]; // FIA BLUFOR
-_enemy_classes = ["O_G_Soldier_lite_F", "O_G_Soldier_F"]; // FIA OPFOR
+_enemy_classes = ["O_G_Soldier_lite_F", "O_G_Soldier_F","O_G_Soldier_lite_F", "O_G_Soldier_F","O_G_Soldier_lite_F", "O_G_Soldier_AR_F"]; // FIA OPFOR
 //_enemy_classes = ["B_T_Soldier_F"]; // NATO Pacific
 //_enemy_classes = ["O_T_Soldier_F"]; // CSAT Pacific
 //_enemy_classes = ["I_C_Soldier_Para_1_F","I_C_Soldier_Para_2_F","I_C_Soldier_Para_7_F"]; // Syndikat Paramilitary
@@ -271,8 +271,8 @@ if(!is3DEN)then{
 	[_patrol_units,   "f\setAISkill\f_setAISkill.sqf"] remoteExec ["execVM", 2];
 	[_garrison_units, "f\setAISkill\f_setAISkill.sqf"] remoteExec ["execVM", 2];
 
-	//[_patrol_units,   "f\assignGear\f_assignGear_AI.sqf"] remoteExec ["execVM", 2];
-	//[_garrison_units, "f\assignGear\f_assignGear_AI.sqf"] remoteExec ["execVM", 2];
+	[_patrol_units,   "f\assignGear\f_assignGear_AI.sqf"] remoteExec ["execVM", 2];
+	[_garrison_units, "f\assignGear\f_assignGear_AI.sqf"] remoteExec ["execVM", 2];
 };
 //------------------------------------------------------------------------------
 if(f_param_debugMode == 1 || is3DEN)then{

@@ -52,6 +52,8 @@ if (_unitfaction in ["ind_f"]) then {
 	["GrpAAF_TH2",_hel, "TH2", "ColorRed"] spawn f_fnc_localGroupMarker;
 	["GrpAAF_TH3",_hel, "TH3", "ColorBlue"] spawn f_fnc_localGroupMarker;
 	["GrpAAF_TH4",_hel, "TH4", "ColorBlue"] spawn f_fnc_localGroupMarker;
+	["GrpAAF_JH1",_hel, "JH1", "ColorPink"] spawn f_fnc_localGroupMarker;
+	["GrpAAF_JH2",_hel, "JH2", "ColorPink"] spawn f_fnc_localGroupMarker;
 
 	["GrpAAF_AH1",_hel, "AH1", "ColorOrange"] spawn f_fnc_localGroupMarker;
 	["GrpAAF_AH2",_hel, "AH2", "ColorOrange"] spawn f_fnc_localGroupMarker;
