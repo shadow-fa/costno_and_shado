@@ -118,8 +118,8 @@ class Params
 	class f_param_number_of_objectives
 	{
 		title = "Number of objectives";
-		values[] = {1,2,3,4,5,6,7,8,9,10};
-		texts[] = {"1","2","3","4","5","6","7","8","9","10"};
+		values[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14};
+		texts[] = {"1","2","3","4","5","6","7","8","9","10","11","12","13","14"};
 		default = 5;
 	};
 	class f_param_objectives_configuration
@@ -127,9 +127,9 @@ class Params
 		title = "Distance between objectives";
 		values[] = {0,1,2};
 		texts[] = {
-			"Big, up to 13 objectives (including fake markers) possible",
-			"Normal, up to 10 objectives (including fake markers) possible",
-			"Small, walking distance (helos just for insertion), up to 4 objectives (including fake markers) possible."
+			"Big, up to 7 objectives (including fake markers) possible",
+			"Normal, up to 14 objectives (including fake markers) possible",
+			"Small, walking distance, up to 5 objectives (including fake markers) possible."
 		};
 		default = 1;
 	};

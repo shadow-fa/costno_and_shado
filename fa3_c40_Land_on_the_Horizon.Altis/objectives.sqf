@@ -1,40 +1,47 @@
 /*
 f_param_debugMode                = 1;
 f_param_fakemarkers              = 0;
-f_param_number_of_objectives     = 0;
-f_param_objectives_configuration = 2;
+f_param_number_of_objectives     = 5;
+f_param_objectives_configuration = 1;
 call compile preprocessFileLineNumbers "objectives.sqf";
 
-x=subgraphs apply {count _x};x sort true;[[x select 0, x select (count x -1)],count x,x]
+x=subgraphs apply {count _x};x sort true;[[x select 0, x select (count x -1)],count x,x];
 
-NOTE: if you want "things" to refresh, call this before executing this script: things = nil;
-things = potential objectives
+NOTE: if you want "things" (things = potential objectives = caches) to refresh,
+      call this before executing this script: things = nil;
 
-TODO: delete unused caches
+TODO: _max_distance_between_objectives is bullshit.
+      because we filter out before we select nodes.
+      the resulting subgraph could have nodes that are more far apart.
 
+TODO: clusters (makes only sense with LESS enemies)
 */
 //------------------------------------------------------------------------------
 //SETTINGS
 private _marker_prefix        = "marker_cache";
 private _color_objectives     = "ColorEAST";
 private _color_debug_nodes    = "ColorBlack"; //ColorWEST
-private _debug                = f_param_debugMode;
+private _debug                = f_param_debugMode; //1 or 2 (2 = with lines)
 private _number_of_objectives = f_param_number_of_objectives;
 private _fakemarker           = f_param_fakemarkers;
 private _configurations       = [
-//    /------------------------------ MIN distance between objectives
-//    |       /---------------------- MAX distance between objectives
-//    |       |        /------------- max dist from centroid
-//    |       |        |           /- max sum(dist from centroid)
-//    v       v        v           V
-	[ 1000,   9000,  9000*2.0,  9000*50.0], //up to   13 objectives (incl fake markers) possible. (pretty much all across the area)
-	[  950,   5000,  5000*1.0,  6000*16.0], //up to 9-10 objectives (incl fake markers) possible.
-	[    0,    700,   700*1.0,  1000*1.0],  //walking distance. up to 4 objectives (incl fake markers) possible.
+//    /------------------------------------------ MIN distance between objectives
+//    |       /---------------------------------- MAX distance between objectives
+//    |       |        /------------------------- max dist from centroid
+//    |       |        |           /------------- max sum(dist from centroid)
+//    |       |        |           |       /----- number of clusters
+//    |       |        |           |       |   /- min distance between clusters
+//    v       v        v           V       v   v
+	[ 2000,     -1,        -1,         -1, -1,   -1], //up to  7 objectives (incl fake markers) possible.
+	[ 1150,     -1,        -1,         -1, -1,   -1], //up to 14 objectives (incl fake markers) possible.
+	[    0,    700,       700,       1500, -1,   -1],  //walking distance. up to 5 objectives (incl fake markers) possible.
+
+	[    0,    700,       700,       1500,  3, 1500],  //same as above + clusters + cluster distance
 
 	//below are some other configurations for testing purposes
-	[ 1000,  10000, 10000*1.0, 10000*10.0], //
-	[  100,   3000,  3000*1.0,  3000*4.0],  //
-	[0,0,0,0]
+	[ 1000,  10000, 10000*1.0, 10000*10.0, -1,   -1], //
+	[  100,   3000,  3000*1.0,  3000*4.0,  -1,   -1],  //
+	[    0,      0,         0,         0,  -1,   -1],
 
 	//DO NOT ADD CONFIGURATIONS HERE WITHOUT EXTENSIVELY TESTING THEM (e.g. by PLOTTING ALL SUBGRAPH CONNECTIONS)!
 	//because the used algorithm is quite shitty and sometimes you won't get any result when changing some numbers
@@ -45,6 +52,8 @@ private _min_distance_between_objectives = _config select 0;
 private _max_distance_between_objectives = _config select 1;
 private _max_distance_from_centroid      = _config select 2;
 private _max_distance_from_centroid_sum  = _config select 3;
+private _clusters                        = _config select 4;
+private _cluster_dist                    = _config select 5;
 
 //------------------------------------------------------------------------------
 //FUNCTIONS
@@ -65,6 +74,7 @@ fnc_distances_to_mean = {
 };
 //------------------------------------------------------------------------------
 fnc_adjacency_matrix = {
+	//TODO adjacency matrix is symmetrical, we could cut the runtime in half...
 	params ["_objects","_max_dist"];
 	private _adjacency_matrix = [];
 	{
@@ -72,7 +82,7 @@ fnc_adjacency_matrix = {
 		private _obj1_array = [];
 		{
 			private _dist = _obj1 distance _x;
-			_obj1_array pushBack ( [0, _dist] select ( _dist < _max_dist ) );
+			_obj1_array pushBack ( [0, _dist] select ( _dist < _max_dist || _max_dist <= 0) );
 		} forEach _objects;
 		_adjacency_matrix pushBack _obj1_array;
 	} forEach _objects;
@@ -88,15 +98,14 @@ call compile preprocessFileLineNumbers "common.sqf";
 //------------------------------------------------------------------------------
 //find all things/objectives
 //things = nil;
-//things is global for debugging
+//things is global for debugging purposes
 if (isNil "things") then {
 	//_pos = getArray(configFile >> "CfgWorlds" >> "Altis" >> "centerPosition");
 	//_radius = _pos; _radius sort false; _radius = (_radius select 0) * (sqrt 2);
-	things = nearestObjects [[25000,22000,0], ["I_supplyCrate_F"], 4500];
+	things = nearestObjects [[25000,21500,0], ["I_supplyCrate_F"], 4500];
 	//things = [cache] call ws_fnc_collectObjectsNum; //wont work in editor
 };
 if ( isNil "things" || (count things) == 0) exitWith {systemChat "No things found"; 0};
-
 //------------------------------------------------------------------------------
 //marker for all things
 if (_debug > 0) then {
@@ -105,11 +114,27 @@ if (_debug > 0) then {
 	} forEach things;
 };
 //------------------------------------------------------------------------------
+debug_time = [];_t1 = diag_tickTime;
+//------------------------------------------------------------------------------
 //connections between objectives
 private _adjacency_matrix = ([things, _max_distance_between_objectives] call fnc_adjacency_matrix);
 //------------------------------------------------------------------------------
+//get pairs of nodes that are too close to each other
+
+private _too_close = [];
+for "_row" from 0 to ((count _adjacency_matrix) - 1) do {
+	for "_col" from (_row + 1) to ((count _adjacency_matrix) - 1) do {
+		private _dist = _adjacency_matrix select _row select _col;
+		if (_dist < _min_distance_between_objectives) then {
+			_too_close pushBack [_row, _col];
+		};
+	};
+};
+//------------------------------------------------------------------------------
+debug_time pushBack (diag_tickTime - _t1);
+_t1 = diag_tickTime;
+//------------------------------------------------------------------------------
 //get subgraphs
-private _t1 = diag_tickTime;
 private _subgraphs = [];
 {
 	private _starting_node = _forEachIndex;
@@ -122,66 +147,56 @@ private _subgraphs = [];
 	} forEach (_x);
 
 	//remove nodes that are too far away from the center of the subgraph
-	private _done = false;
-	while {! _done} do {
-		private _distances_to_mean = [things, _subgraph] call fnc_distances_to_mean;
-		private _sum       =  0;
-		private _max       = -1;
-		private _max_index = -1;
-		{
-			//dont remove the starting_node!
-			if (_x > _max && _subgraph select _forEachIndex != _starting_node) then {
-				_max = _x;
-				_max_index = _forEachIndex;
-			};
-			_sum = _sum + _x;
-		} forEach _distances_to_mean;
-
-		if (_max >= _max_distance_from_centroid || _sum > _max_distance_from_centroid_sum) then {
-			_subgraph deleteAt _max_index;
-		} else {
-			_done = true;
-		}
-	};
-
-	//remove nodes if they're too close to each other. (after removing nodes that are too far off center)
-	_done = false;
-	while {! _done} do {
-		//_distances_to_mean = [things, _subgraph] call fnc_distances_to_mean;
-		_done = true;
-		private _to_be_removed = nil;
-		{
-			private _node1 = _x;
-			//_node1_index = _forEachIndex; //does only work if we don't remove things within this loop
+	if (_max_distance_from_centroid > 0 || _max_distance_from_centroid_sum > 0) then {
+		private _done = false;
+		while {! _done} do {
+			private _distances_to_mean = [things, _subgraph] call fnc_distances_to_mean;
+			private _sum       =  0;
+			private _max       = -1;
+			private _max_index = -1;
 			{
-				private _node2 = _x;
-				//_node2_index = _forEachIndex;
-				if (_node1 != _node2 && ((_adjacency_matrix select _node1) select _node2) < _min_distance_between_objectives) then {
-					//if (_distances_to_mean select _node1_index > _distances_to_mean select _node2_index) then {
-					//	_to_be_removed = _node1;
-					//	_done = false;
-					//} else {
-					//	_to_be_removed = _node2;
-					//	_done = false;
-					//};
-					_to_be_removed = selectRandom [_node1, _node2];
-					_done = false;
+				//dont remove the starting_node!
+				if (_x > _max && (_subgraph select _forEachIndex) != _starting_node) then {
+					_max = _x;
+					_max_index = _forEachIndex;
 				};
-				if (!_done) exitWith {};
-			} forEach _subgraph;
-			if (!_done) exitWith {};
-		} forEach _subgraph;
+				_sum = _sum + _x;
+			} forEach _distances_to_mean;
 
-		if (!isNil "_to_be_removed") then {
-			_subgraph = _subgraph - [ _to_be_removed ];
+			if ((_max >= _max_distance_from_centroid    && _max_distance_from_centroid     > 0) ||
+				(_sum > _max_distance_from_centroid_sum && _max_distance_from_centroid_sum > 0)    ) then {
+				_subgraph deleteAt _max_index;
+			} else {
+				_done = true;
+			}
 		};
 	};
 
+	//remove nodes if they're too close to each other. (after removing nodes that are too far off center)
+	private _sg_too_close = +_too_close;
+	_sg_too_close = _sg_too_close select {(_x select 0) in _subgraph &&
+		                                  (_x select 1) in _subgraph};
+	//process pairs
+	while {count _sg_too_close > 0} do {
+		private _pair = _sg_too_close select 0;
+
+		private _start_in_pair = _pair find _starting_node;
+		//private _delete = selectRandom _pair;
+		private _delete = _pair select 1; //why do i have to delete the 2nd element here?
+		//dont remove the starting node:
+		if (_start_in_pair != -1) then {
+			_delete = _pair select ( 1 - _start_in_pair );
+		};
+
+		_subgraph = _subgraph - [_delete];
+		_sg_too_close = _sg_too_close select {!(_delete in _x)};
+	};
+
 	_subgraphs pushBack _subgraph;
-} forEach _adjacency_matrix; // time: O(n^3)
-if (_debug > 0) then {
-	debug_time = diag_tickTime - _t1;
-};
+} forEach _adjacency_matrix; // time: O(n^2)
+
+//------------------------------------------------------------------------------
+debug_time pushBack (diag_tickTime - _t1);
 //------------------------------------------------------------------------------
 //remove duplicate subgraphs
 {_x sort true} forEach _subgraphs;
@@ -226,15 +241,17 @@ if (_debug > 0) then {
 			_pos = _pos getPos [_dist, 360/(count _subgraphs)*_subgraph_index];
 			private _color = dbg_colors select (_subgraph_index % (count dbg_colors));
 
-			[_pos, _marker_prefix, format ["graph_%1", _subgraph_index], "mil_dot", _color] call fnc_marker;
-
-			private _x1 = _x;
-			{
-				if (_x1 != _x) then {
-					private _pos2 = (things select _x) getPos [_dist, 360/(count _subgraphs)*_subgraph_index];
-					[_marker_prefix, _pos, _pos2, _color,5,false] call fnc_draw_line;
-				};
-			} forEach _graph;
+			//[_pos, _marker_prefix, format ["graph_%1", _subgraph_index], "mil_dot", _color] call fnc_marker;
+			[_pos, _marker_prefix, format ["graph_%1", _subgraph_index], "mil_objective", _color, [0.6,0.6]] call fnc_marker;
+			if (_debug > 1 || count _subgraphs < 30) then {
+				private _x1 = _x;
+				{
+					if (_x1 != _x) then {
+						private _pos2 = (things select _x) getPos [_dist, 360/(count _subgraphs)*_subgraph_index];
+						[_marker_prefix, _pos, _pos2, _color, 1.0, false] call fnc_draw_line;
+					};
+				} forEach _graph;
+			};
 		} forEach _graph;
 	} forEach _subgraphs;
 };
@@ -265,7 +282,6 @@ private _nodes_selected_fake = _nodes_selected select [_number_of_objectives, co
 //mark selected nodes
 {
 	private _objective = things select _x;
-	systemChat str [_objective, _x, _nodes_selected];
 	//mark node
 	private _marker = [_objective, _marker_prefix, "objectives", "mil_objective", _color_objectives] call fnc_marker;
 	if ((_debug > 0) && (_x in _nodes_selected_fake)) then {

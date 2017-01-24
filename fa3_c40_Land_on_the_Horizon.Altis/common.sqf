@@ -40,7 +40,6 @@ fnc_draw_line = {
 	params ["_prefix", "_pos1", "_pos2",["_color", "ColorGrey"],["_thickness",10],["_show_distances",false]];
 	if (typename _pos1 == "OBJECT") then { _pos1 = position _pos1; };
 	if (typename _pos2 == "OBJECT") then { _pos2 = position _pos2; };
-	if (typename _pos2 == "OBJECT") then { _pos2 = position _pos2; };
 
 	if (count _pos1 < 3) then { _pos1 pushBack 0; };
 	if (count _pos2 < 3) then { _pos2 pushBack 0; };
