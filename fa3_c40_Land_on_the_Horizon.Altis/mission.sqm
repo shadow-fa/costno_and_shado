@@ -16,10 +16,10 @@ class EditorData
 	};
 	class Camera
 	{
-		pos[]={25647.107,63.293427,21007.332};
-		dir[]={0.079687156,-0.65746593,0.74926901};
-		up[]={0.069532037,0.75347698,0.65378189};
-		aside[]={0.99439681,-1.1082739e-007,-0.10575693};
+		pos[]={26821.68,48.710136,24542.1};
+		dir[]={0.54797006,-0.56498885,0.61686248};
+		up[]={0.3752242,0.82509917,0.422398};
+		aside[]={0.74762166,1.922017e-007,-0.66412675};
 	};
 };
 binarizationWanted=0;
@@ -204,7 +204,7 @@ class Mission
 {
 	class Intel
 	{
-		briefingName="fa3_c40_Land_on_the_Horizon_v2";
+		briefingName="fa3_c40_Land_on_the_Horizon_v3";
 		overviewText="AAF SAS destroy caches in the Northwest of Altis.    Can use Littlebirds (Pilot + 7) or Ghosthawks (Pilot + 11).  Zeus optional (probably only needed if you have AH). Host determines cache distance and amount.  Juliett is reinforcments. Mission has a lot of prep to do, give it a minute to create markers!";
 		resistanceWest=0;
 		timeOfChanges=1800.0002;
@@ -3418,7 +3418,7 @@ class Mission
 									"STRING"
 								};
 							};
-							value="[[[[],[]],[[""DemoCharge_Remote_Mag""],[5]],[[""FirstAidKit""],[4]],[[],[]]],false]";
+							value="[[[[],[]],[[""DemoCharge_Remote_Mag""],[20]],[[""FirstAidKit""],[4]],[[],[]]],false]";
 						};
 					};
 				};
@@ -5618,7 +5618,7 @@ class Mission
 					dataType="Object";
 					class PositionInfo
 					{
-						position[]={24282.658,13.022375,19909.098};
+						position[]={24282.578,13.025901,19909.08};
 						angles[]={0.0066671576,0,6.2285738};
 					};
 					side="East";
@@ -5630,7 +5630,7 @@ class Mission
 					};
 					id=474;
 					type="O_G_Soldier_F";
-					atlOffset=9.5367432e-007;
+					atlOffset=-0.00099945068;
 					class CustomAttributes
 					{
 						class Attribute0
@@ -5660,7 +5660,7 @@ class Mission
 					dataType="Object";
 					class PositionInfo
 					{
-						position[]={24282.658,13.022375,19909.098};
+						position[]={24282.578,13.025901,19909.08};
 						angles[]={0.0066671576,0,6.2285738};
 					};
 					side="East";
@@ -5672,7 +5672,7 @@ class Mission
 					};
 					id=475;
 					type="O_G_Soldier_F";
-					atlOffset=9.5367432e-007;
+					atlOffset=-0.00099945068;
 					class CustomAttributes
 					{
 						class Attribute0
@@ -5779,15 +5779,15 @@ class Mission
 				};
 			};
 			id=472;
-			atlOffset=-0.0012483597;
+			atlOffset=-0.00099945068;
 		};
 		class Item134
 		{
 			dataType="Object";
 			class PositionInfo
 			{
-				position[]={24282.695,15.185072,19909.086};
-				angles[]={0.0066682254,0,6.2285728};
+				position[]={24282.695,15.185321,19909.086};
+				angles[]={0.0066671576,0,6.2285738};
 			};
 			side="East";
 			flags=6;
@@ -5799,10 +5799,11 @@ class Mission
 			class Attributes
 			{
 				name="fiaTech_1";
+				presenceCondition="f_param_enemy_vehicles != 0";
 			};
 			id=473;
 			type="O_G_Offroad_01_armed_F";
-			atlOffset=-0.0012483597;
+			atlOffset=-0.00099945068;
 		};
 		class Item135
 		{
@@ -5967,15 +5968,15 @@ class Mission
 				};
 			};
 			id=476;
-			atlOffset=-0.024085999;
+			atlOffset=-0.024000168;
 		};
 		class Item136
 		{
 			dataType="Object";
 			class PositionInfo
 			{
-				position[]={22840.076,19.985134,20494.086};
-				angles[]={6.2378831,0,6.1427822};
+				position[]={22840.076,19.98522,20494.086};
+				angles[]={6.2378764,0,6.1427732};
 			};
 			side="East";
 			flags=6;
@@ -5987,10 +5988,11 @@ class Mission
 			class Attributes
 			{
 				name="fiaTech_2";
+				presenceCondition="f_param_enemy_vehicles != 0";
 			};
 			id=479;
 			type="O_G_Offroad_01_armed_F";
-			atlOffset=-0.024085999;
+			atlOffset=-0.024000168;
 		};
 		class Item137
 		{
@@ -7087,6 +7089,7 @@ class Mission
 			};
 			id=530;
 			type="I_supplyCrate_F";
+			atlOffset=0.00081062317;
 			class CustomAttributes
 			{
 				class Attribute0
@@ -7127,6 +7130,7 @@ class Mission
 			};
 			id=531;
 			type="I_supplyCrate_F";
+			atlOffset=5.4359436e-005;
 			class CustomAttributes
 			{
 				class Attribute0

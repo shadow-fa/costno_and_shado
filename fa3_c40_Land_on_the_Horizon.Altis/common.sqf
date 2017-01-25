@@ -18,6 +18,10 @@ fnc_min_max = {
 fnc_marker = {
 	params ["_pos_or_object", ["_prefix1",""], ["_prefix2",""], ["_shape_type","ELLIPSE"], ["_color","ColorBlack"], ["_size",[1,1]], ["_alpha",1.0], ["_dir",0], ["_text",""]];
 
+	if (typename _size != typename []) then {
+		_size = [_size, _size];
+	};
+
 	private _mkr = format ["%1_%2_%3", _prefix1, _prefix2, _pos_or_object];
 	deleteMarker _mkr;
 	_mkr = createMarker [_mkr, _pos_or_object];
