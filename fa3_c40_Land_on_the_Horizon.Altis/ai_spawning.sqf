@@ -8,6 +8,9 @@ TODO: evaluate https://github.com/CBATeam/CBA_A3/blob/master/addons/ai/fnc_taskP
 //This "if" makes sure that it gets executed on HC if available, otherwise only on server
 if ((isNil "hc" && !isServer) || (!isNil "hc" && (isServer || hasInterface))) exitWith {};
 //------------------------------------------------------------------------------
+//parameter:
+private _objectives = _this;
+
 private _garrison_data = [
 	//radius min-max,  number of ai
 	[0,   100,         2],
@@ -59,7 +62,7 @@ if (is3DEN) then {
 		};
 	} forEach things;
 	//objectives = nearestObjects [[22500,20000,0], ["I_supplyCrate_F"], 4500];
-
+	_objectives = objectives; //overwrite parameter
 	{deleteMarker _x;} forEach (["marker_","SHK_patrol"] call ws_fnc_collectMarkers);
 };
 //------------------------------------------------------------------------------
@@ -161,7 +164,7 @@ private _garrison_max_size = 0;
 
 		_garrison_max_size = _garrison_max_size max _size;
 	} forEach _garrison_data;
-} forEach objectives;
+} forEach _objectives;
 
 //debug marker and removing units
 if (is3DEN) then {
@@ -184,7 +187,7 @@ if (is3DEN) then {
 				_x setVariable ["ws_bUnits",   nil];
 				//_x setVariable ["ws_bPos",     nil];
 			} forEach _buildings;
-		} forEach objectives;
+		} forEach _objectives;
 	};
 };
 //------------------------------------------------------------------------------
@@ -203,7 +206,7 @@ private _patrol_configs = [
 private _patrols_per_objective = f_param_number_of_ai;
 private _patrol_units = [];
 {
-	private _objective_pos = position _x;
+	private _objective_pos = if (typename _x == typename []) then {_x} else {position _x};
 	private _groups_for_this_objective = [];
 	private _color = dbg_colors select ( _forEachIndex % (count dbg_colors)); //color per objective
 	for "_j" from 1 to _patrols_per_objective do {
@@ -264,8 +267,10 @@ private _patrol_units = [];
 		};
 
 	};
-	_x setVariable ["groups", _groups_for_this_objective, true];
-} forEach objectives;
+	if (typename _x != typename []) then {
+		_x setVariable ["groups", _groups_for_this_objective, true];
+	};
+} forEach _objectives;
 //------------------------------------------------------------------------------
 if(!is3DEN)then{
 	[_patrol_units,   "f\setAISkill\f_setAISkill.sqf"] remoteExec ["execVM", 2];

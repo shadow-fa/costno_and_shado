@@ -95,7 +95,7 @@ for "_i" from 1 to (_cnt - 1) do {
     // When completing waypoint have 33% chance to choose a random next wp
     [_grp,_i] setWaypointStatements ["true", "if ((random 3) > 2) then { group this setCurrentWaypoint [(group this), (floor (random (count (waypoints (group this)))))];};"];
 
-    if (DEBUG || f_param_debugMode > 0) then {
+    if (DEBUG) then {
       private "_m";
       _m = createMarker [format["SHK_patrol_WP%1%2",(floor(_cur select 0)),(floor(_cur select 1))],_cur];
       _m setMarkerShape "Ellipse";
@@ -107,7 +107,7 @@ for "_i" from 1 to (_cnt - 1) do {
       };
     };
 };
-if (DEBUG || f_param_debugMode > 0) then {
+if (DEBUG) then {
     ["SHK_patrol", (_wps select (_cnt - 1) ), (_wps select 1), _color, 4] call fnc_draw_line;
 };
 // Cycle in case we reach the end

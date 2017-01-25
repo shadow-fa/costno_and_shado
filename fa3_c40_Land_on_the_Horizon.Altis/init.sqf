@@ -225,10 +225,14 @@ f_var_civAI = independent; 		// Optional: The civilian AI will use this side's s
 
 if (isServer) then {
 	//get objectives
-	objectives = [] call compile preprocessFileLineNumbers "objectives.sqf";
+	objectives_and_fakes = [] call compile preprocessFileLineNumbers "objectives.sqf";
+	objectives = objectives_and_fakes select 0;
+	//make array flat for ai-spawning
+	objectives_and_fakes = objectives + (objectives_and_fakes select 1);
 	objectives_done = objectives apply {0};
 	publicVariable "objectives";
 	publicVariable "objectives_done";
+	publicVariable "objectives_and_fakes";
 	//--------------------------------------------------------------------------
 	//add damage handler to objectives
 	{
@@ -279,10 +283,11 @@ if (isServer) then {
 //------------------------------------------------------------------------------
 waitUntil {sleep 0.5; !isNil "objectives"};
 waitUntil {sleep 0.5; !isNil "objectives_done"};
+waitUntil {sleep 0.5; !isNil "objectives_and_fakes"};
 waitUntil {count objectives > 0};
 
 //spawn AI (isServer check inside sqf file)
-[] execVM "ai_spawning.sqf";
+objectives_and_fakes execVM "ai_spawning.sqf";
 //------------------------------------------------------------------------------
 //spawn loop to check if objectives are alive
 if (isServer) then {

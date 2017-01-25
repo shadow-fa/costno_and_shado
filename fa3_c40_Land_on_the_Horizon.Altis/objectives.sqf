@@ -357,7 +357,8 @@ if (_debug > 0) then {
 	_nodes_selected = nil;
 };
 //------------------------------------------------------------------------------
-_objectives = _nodes_selected_no_fake apply {things select _x};
+_objectives     = _nodes_selected_no_fake apply {things select _x};
+_fake_positions = _nodes_selected_fake    apply {position (things select _x)};
 
 //remove unused caches
 if(!is3DEN) then {
@@ -365,6 +366,6 @@ if(!is3DEN) then {
 	_things_to_delete = _things_to_delete - _objectives;
 	{deleteVehicle _x;} forEach _things_to_delete;
 };
-//RETURN objectives (without fake markers)
-_objectives
+//RETURN objectives and positions of fake-markers
+[_objectives, _fake_positions]
 //------------------------------------------------------------------------------
