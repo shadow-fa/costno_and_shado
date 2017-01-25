@@ -317,3 +317,25 @@ if (isServer) then {
 	};
 };
 //------------------------------------------------------------------------------
+//Littlebird setup
+if (isServer) then {
+	// the 7 littlebirds
+	_littlebirds = [lb, lb_1, lb_2, lb_3, lb_4, alb, alb_1]; 
+	// littlebird camo and flares
+ 	{
+		[_x, [0, "A3\Air_F\Heli_Light_01\Data\heli_light_01_ext_indp_co.paa"]] remoteExec ["setObjectTexture", 0, true];
+		_x addweaponTurret ["CMFlareLauncher", [-1]];
+		_x addmagazineTurret ["120Rnd_CMFlare_Chaff_Magazine", [-1]];
+		["v_helo_l", _x, "aaf"] call f_fnc_assignGear; 
+	} foreach _littlebirds;
+	// add guns to attack birds
+	_attackbirds = [alb, alb_1];
+	{
+		_x removeWeapon "missiles_DAR"; 
+		_x removeWeapon "M134_minigun";
+		_x addmagazine "2000Rnd_65x39_Belt_Tracer_Red"; 
+		_x addweapon "LMG_Minigun2";
+		_x addmagazine "250Rnd_30mm_APDS_shells_Tracer_Red";
+ 		_x addweapon "gatling_30mm"; 
+	} foreach _attackbirds;
+};
