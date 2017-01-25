@@ -1,11 +1,10 @@
 /*
 f_param_debugMode                = 1;
 f_param_fakemarkers              = 0;
-f_param_number_of_objectives     = 5;
-f_param_objectives_configuration = 1;
+f_param_number_of_objectives     = 3;
+f_param_objectives_configuration = 3;
+f_param_clusters                 = 1;
 call compile preprocessFileLineNumbers "objectives.sqf";
-
-x=subgraphs apply {count _x};x sort true;[[x select 0, x select (count x -1)],count x,x];
 
 NOTE: if you want "things" (things = potential objectives = caches) to refresh,
       call this before executing this script: things = nil;
@@ -14,7 +13,11 @@ TODO: _max_distance_between_objectives is bullshit.
       because we filter out before we select nodes.
       the resulting subgraph could have nodes that are more far apart.
 
-TODO: clusters (makes only sense with LESS enemies)
+TODO: cluster documentation
+	f_param_clusters: 1-8 (might be less than selected, because _cluster_dist)
+	use LOW enemy count when using clusters!!!
+	rename num-objectives to ... PER cluster (in description.ext)
+
 */
 //------------------------------------------------------------------------------
 //SETTINGS
@@ -23,27 +26,24 @@ private _color_objectives     = "ColorEAST";
 private _color_debug_nodes    = "ColorBlack"; //ColorWEST
 private _debug                = f_param_debugMode; //1 or 2 (2 = with lines)
 private _number_of_objectives = f_param_number_of_objectives;
-private _fakemarker           = f_param_fakemarkers;
+private _fakemarker           = f_param_fakemarkers; //has to be 0 or 1
+private _clusters             = f_param_clusters; //has to be >= 1
+private _cluster_dist         = 1800;
 private _configurations       = [
-//    /------------------------------------------ MIN distance between objectives
-//    |       /---------------------------------- MAX distance between objectives
-//    |       |        /------------------------- max dist from centroid
-//    |       |        |           /------------- max sum(dist from centroid)
-//    |       |        |           |       /----- number of clusters
-//    |       |        |           |       |   /- min distance between clusters
-//    v       v        v           V       v   v
-	[ 2000,     -1,        -1,         -1, -1,   -1], //up to  7 objectives (incl fake markers) possible.
-	[ 1150,     -1,        -1,         -1, -1,   -1], //up to 14 objectives (incl fake markers) possible.
-	[    0,    700,       700,       1500, -1,   -1],  //walking distance. up to 5 objectives (incl fake markers) possible.
+//       /------------------------------------------ MIN distance between objectives
+//       |       /---------------------------------- MAX distance between objectives
+//       |       |          /------------------------- max dist from centroid
+//       |       |          |           /------------- max sum(dist from centroid)
+//       |       |          |           |
+//       |       |          |           |
+//       v       v          v           V
+	[ 2000,     -1,        -1,         -1],  //big,    <= 7 obj. No clusters possible
+	[ 1150,     -1,        -1,         -1],  //normal, <=14 obj. No clusters possible
+	[    0,    700,       700,       1500],  //small,  <= 5 obj. ~1-2km total walking distance
+	[    0,    500,       500,       1000],  //tiny,   <= 4 obj. ~1km total walking distance (RECOMMENDED OPTION FOR CLUSTERS)
+	[   -1,     -1,        -1,         -1]
 
-	[    0,    700,       700,       1500,  3, 1500],  //same as above + clusters + cluster distance
-
-	//below are some other configurations for testing purposes
-	[ 1000,  10000, 10000*1.0, 10000*10.0, -1,   -1], //
-	[  100,   3000,  3000*1.0,  3000*4.0,  -1,   -1],  //
-	[    0,      0,         0,         0,  -1,   -1],
-
-	//DO NOT ADD CONFIGURATIONS HERE WITHOUT EXTENSIVELY TESTING THEM (e.g. by PLOTTING ALL SUBGRAPH CONNECTIONS)!
+	//DO NOT ADD/CHANGE ANYTHING HERE WITHOUT EXTENSIVE TESTING (e.g. by plotting all subgraph connections)!
 	//because the used algorithm is quite shitty and sometimes you won't get any result when changing some numbers
 	//be aware: some parts of the algorithm are randomized.
 ];
@@ -52,22 +52,31 @@ private _min_distance_between_objectives = _config select 0;
 private _max_distance_between_objectives = _config select 1;
 private _max_distance_from_centroid      = _config select 2;
 private _max_distance_from_centroid_sum  = _config select 3;
-private _clusters                        = _config select 4;
-private _cluster_dist                    = _config select 5;
+private _cluster_dist                    = 1500;
 
 //------------------------------------------------------------------------------
 //FUNCTIONS
 //------------------------------------------------------------------------------
-fnc_distances_to_mean = {
+fnc_mean = {
 	params ["_objects","_indices"];
-	private _num = count _indices;
 	private _mean = [0,0,0];
-
 	{
 		private _pos = getPos (_objects select _x);
 		_mean = _mean vectorAdd _pos;
 	} forEach _indices;
-	_mean = _mean vectorMultiply (1/_num);
+	_mean = _mean vectorMultiply (1/(count _indices));
+
+	_mean
+};
+//------------------------------------------------------------------------------
+fnc_mean_distances = {
+	params ["_objects","_indices"];
+	private _mean = [0,0,0];
+	{
+		private _pos = getPos (_objects select _x);
+		_mean = _mean vectorAdd _pos;
+	} forEach _indices;
+	_mean = _mean vectorMultiply (1/(count _indices));
 	private _distances_to_mean = _indices apply { _mean distance (getPos (_objects select _x)) };
 
 	_distances_to_mean
@@ -150,7 +159,7 @@ private _subgraphs = [];
 	if (_max_distance_from_centroid > 0 || _max_distance_from_centroid_sum > 0) then {
 		private _done = false;
 		while {! _done} do {
-			private _distances_to_mean = [things, _subgraph] call fnc_distances_to_mean;
+			private _distances_to_mean = [things, _subgraph] call fnc_mean_distances;
 			private _sum       =  0;
 			private _max       = -1;
 			private _max_index = -1;
@@ -219,19 +228,29 @@ debug_time pushBack (diag_tickTime - _t1);
 	//};
 } forEach _subgraphs;
 //------------------------------------------------------------------------------
-private _num_obj_incl_fake = _number_of_objectives + _fakemarker; //_fakemarker should be "1"
-//remove subgraphs that don't have enough nodes
-private _max_subgraph_size = -1;
-{
-	_max_subgraph_size = (count _x) max _max_subgraph_size
-} forEach _subgraphs;
+// sort subgraphs for easier postprocessing:
+_subgraphs = [_subgraphs, [], {count _x}] call BIS_fnc_sortBy;
 
-_num_obj_incl_fake = _num_obj_incl_fake min _max_subgraph_size;
-//remove all smaller subgraphs
-_subgraphs = _subgraphs select {count _x >= _num_obj_incl_fake};
+//remove subgraphs smaller than _number_of_objectives,
+//iff we have at least as many subgraphs as clusters afterwards
+//NOTE: this is theoretically wrong, becuse it might still result in less
+//      subgraphs then clusters because of min-cluster-distance
+private _tmp = _subgraphs select {(count _x) >= _number_of_objectives};
+if (count _tmp >= _clusters) then {
+	_subgraphs = +_tmp;
+};
+////this is wrong because it removes too many subgraphs. see note above
+////remove smaller than _number_of_objectives + _fakemarker, iff...
+//_tmp = _subgraphs select {(count _x) >= (_number_of_objectives + _fakemarker)};
+//if (count _tmp >= _clusters) then {
+//	_subgraphs = +_tmp;
+//};
+_tmp = nil;
 //------------------------------------------------------------------------------
 //mark all possible sets
 if (_debug > 0) then {
+	private _max_subgraph_size = count (_subgraphs select (count _subgraphs - 1));
+	private _line_width = [1, 5] select (_max_subgraph_size < 15);
 	{
 		private _subgraph_index = _forEachIndex;
 		private _graph = _subgraphs select _subgraph_index;
@@ -241,14 +260,13 @@ if (_debug > 0) then {
 			_pos = _pos getPos [_dist, 360/(count _subgraphs)*_subgraph_index];
 			private _color = dbg_colors select (_subgraph_index % (count dbg_colors));
 
-			//[_pos, _marker_prefix, format ["graph_%1", _subgraph_index], "mil_dot", _color] call fnc_marker;
-			[_pos, _marker_prefix, format ["graph_%1", _subgraph_index], "mil_objective", _color, [0.6,0.6]] call fnc_marker;
-			if (_debug > 1 || count _subgraphs < 30) then {
+			[_pos, _marker_prefix, format ["graph_%1", _subgraph_index], "mil_objective", _color, [0.5,0.5]] call fnc_marker;
+			if (_debug > 1 || count _subgraphs < 40) then {
 				private _x1 = _x;
 				{
 					if (_x1 != _x) then {
 						private _pos2 = (things select _x) getPos [_dist, 360/(count _subgraphs)*_subgraph_index];
-						[_marker_prefix, _pos, _pos2, _color, 1.0, false] call fnc_draw_line;
+						[_marker_prefix, _pos, _pos2, _color, _line_width, false] call fnc_draw_line;
 					};
 				} forEach _graph;
 			};
@@ -256,28 +274,62 @@ if (_debug > 0) then {
 	} forEach _subgraphs;
 };
 //------------------------------------------------------------------------------
-//select random subgraph
-//NOTE: from here on we ignore _subgraphs and only use _nodes_selected
-//_nodes_selected will also contain the fake markers
+//clusters:
+_clusters = _clusters max 1; // in case it's 0 or -1 or something
+_clusters = _clusters min (count _subgraphs);
 
-//NOTE: "+"" to make sure we don't change the original array in case we still need it
-private _nodes_selected = +(selectRandom _subgraphs);
-
-if (_fakemarker > 0) then {
-	//_num_obj_incl_fake = _number_of_objectives + (selectRandom [1,2]);
-	_num_obj_incl_fake = (_number_of_objectives + 2) min (count _nodes_selected);
+private _subgraphs_means = [];
+if (_clusters > 1) then  {
+	_subgraphs_means = _subgraphs apply { [things, _x] call fnc_mean };
 };
-//remove nodes until _number_of_objectives (or _num_obj_incl_fake)
 
-//shuffle, so that we don't always remove the same nodes
-_nodes_selected = _nodes_selected call BIS_fnc_arrayShuffle;
-_nodes_selected resize _num_obj_incl_fake;
+//subgraph indices, shuffled: (so that we can loop over it and don't worry about endless loops or picking the same thing twice)
+private _indices = 0;
+_indices = _subgraphs apply { _indices = _indices+1; _indices-1 };
+_indices = _indices call BIS_fnc_arrayShuffle;
 
-//nodes without fake
-private _nodes_selected_no_fake = +_nodes_selected; //"+" because we still need the original array intact
-_nodes_selected_no_fake resize _number_of_objectives;
-//nodes: only fake
-private _nodes_selected_fake = _nodes_selected select [_number_of_objectives, count _nodes_selected - _number_of_objectives];
+//select subgraphs/clusters
+private _subgraphs_selected_indices = [];
+{
+	if(count _subgraphs_selected_indices >= _clusters) exitWith {};
+
+	if(_clusters == 1) exitWith {
+		_subgraphs_selected_indices pushBack _x;
+	};
+
+	private _new_sg_mean = _subgraphs_means select _x;
+	private _means_selected = _subgraphs_selected_indices apply {_subgraphs_means select _x};
+	if({_new_sg_mean distance2d _x < _cluster_dist} count _means_selected == 0) then {
+		//it's far enough away from all other clusters, add it to _subgraphs_selected_indices
+		_subgraphs_selected_indices pushBack _x;
+		if (_debug > 0) then {
+			private _color = dbg_colors select ( _x % (count dbg_colors));
+			[_new_sg_mean, _marker_prefix, format ["cluster_mean"], "mil_box", _color, [2,2]] call fnc_marker;
+		};
+	};
+} forEach _indices;
+//------------------------------------------------------------------------------
+//based on the previously selected clusters (_subgraphs_selected_indices):
+//select subgraphs, remove unnecessary nodes, ...
+private _nodes_selected_no_fake = [];
+private _nodes_selected_fake = [];
+private _size_w_fake = _number_of_objectives + (_fakemarker * 2);
+{
+	private _nodes = +(_subgraphs select _x);
+
+	private _new_size = (_number_of_objectives + _fakemarker)
+	                    min (count _nodes)
+	                    min (_number_of_objectives + _fakemarker * 2);
+	//remove random nodes if subgraph is too big
+	_nodes = _nodes call BIS_fnc_arrayShuffle;
+	_nodes resize _new_size;
+
+	private _nodes_no_fake = _nodes select [0, _number_of_objectives];
+	private _nodes_fake    = _nodes select [_number_of_objectives, (count _nodes) - _number_of_objectives];
+	//pushBackUnique because subgraphs can overlap
+	{ _nodes_selected_fake    pushBackUnique _x; } forEach _nodes_fake;
+	{ _nodes_selected_no_fake pushBackUnique _x; } forEach _nodes_no_fake;
+} forEach _subgraphs_selected_indices;
 //------------------------------------------------------------------------------
 //mark selected nodes
 {
@@ -291,16 +343,17 @@ private _nodes_selected_fake = _nodes_selected select [_number_of_objectives, co
 
 	_objective setVariable ["marker_name", _marker, true]; //to change the marker later
 	_objective setVariable ["index", _forEachIndex, true]; //used for damage handler
-} forEach _nodes_selected;
+} forEach (_nodes_selected_fake + _nodes_selected_no_fake);
 //------------------------------------------------------------------------------
 if (_debug > 0) then {
 	subgraphs = _subgraphs;
 } else {
 	_subgraphs = nil;
 	_adjacency_matrix = nil;
+	_too_close = nil;
+	_subgraphs_means = nil;
 };
 //------------------------------------------------------------------------------
-//select things with indices in _nodes_selected
 _objectives = _nodes_selected_no_fake apply {things select _x};
 
 //remove unused caches
