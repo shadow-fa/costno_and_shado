@@ -144,7 +144,7 @@ class Params
 			"Big, up to 7 objectives. No clusters possible",
 			"Normal, up to 14 objectives. No clusters possible",
 			"Small, up to 5 objectives. ~1-2km walking distance (per cluster)",
-			"Tiny, up to 4 objectives. ~1-2km walking distance (per cluster) (Recommended option for clusters)"
+			"Tiny, up to 4 objectives. ~1km walking distance (per cluster) (Recommended option for clusters)"
 		};
 		default = 1;
 	};
