@@ -3,17 +3,9 @@ player allowDamage false;
 removeBackpack player;
 player addBackpack "B_AssaultPack_blk";
 
-TODO f3: briefing, gear
-TODO give backpack to 1 side?
-TODO eden description, mp description
 TODO defuse kit?
 TODO FUTURE or just write in briefing: defusers shouldnt be able to pick up backpack.
 
-
-changes since vt2:
-* distance2d to distance in bombs.sqf
-* multiple bombsite marker per bombsite (for helipad) (also changed sqm file (multiple helipad bombsite markers +  below ground) )
-* loading screen until everyone is loaded
 
 */
 //------------------------------------------------------------------------------
@@ -133,25 +125,34 @@ if(isServer)then{
 			};
 		} forEach players;
 	};
+
+
+	//bomb setup for server (because it has to happen after !isNil objective)
+	//and we can't wait because we need it to happen while still on map screen before loading in
+	_bombsites_at_objective = [];
+	{
+		if(_x inArea objective)then{_bombsites_at_objective pushBack _x};
+	} forEach _bombsites;
+	[_bombsites_at_objective] call compile preprocessFileLineNumbers "bombs.sqf";
 };
 
-//------------------------------------------------------------------------------
-//call before waitUntil/sleep... because we want this code to be executed earlier (on the map screen before loading in)
-_bombsites_at_objective = [];
-{
-	if(_x inArea objective)then{_bombsites_at_objective pushBack _x};
-} forEach _bombsites;
-[_bombsites_at_objective] call compile preprocessFileLineNumbers "bombs.sqf";
 //------------------------------------------------------------------------------
 
 //client setup: just calling fnc_setPlayerPos basically
 if(hasInterface)then{
-	waitUntil {sleep 0.1; (time > 0)};
+	waitUntil {sleep 0.05; (time > 0)};
 	startLoadingScreen ["Loading"];
 
 	waitUntil {/*sleep 0.1;*/ !isNil "server_setup_done"};
 	waitUntil {/*sleep 0.1;*/ server_setup_done};
 	waitUntil {/*sleep 0.1;*/ (time > 0.2)};
+
+	//bombs event handler + function definitions: (parameter doesn't matter here)
+	if(!isServer)then{
+		//because server already executed this.
+		[] call compile preprocessFileLineNumbers "bombs.sqf";
+	};
+
 
 	//not sure this elaborate mechanism is needed.
 	//But setPos only works if player actually is loaded in. (maybe time > 0.1 would be enough)

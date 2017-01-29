@@ -2,7 +2,7 @@
 
 if(f_param_time_to_explosion == 0)exitWith {0};
 //------------------------------------------------------------------------------
-bombdistance = 2.8; //how far player can be for action
+bombdistance = 2.8; //how far the player can be away for the action
 duration_defusing = 5;
 duration_planting = 5;
 
@@ -27,7 +27,7 @@ fnc_plant_bomb_players = {
 			"\a3\ui_f\data\IGUI\Cfg\Actions\Obsolete\ui_action_deactivate_ca.paa", // Idle icon shown on screen
 			"\a3\ui_f\data\IGUI\Cfg\Actions\Obsolete\ui_action_deactivate_ca.paa", // Progress icon shown on screen
 			"_this   distance _target < bombdistance", //Condition for the action to be shown
-			"_caller distance _target < bombdistance", // Condition for the action to progress
+			"_caller distance _target < bombdistance", //Condition for the action to progress
 			{}, // Code executed when action starts
 			{}, // Code executed on every progress tick
 			{
@@ -48,7 +48,7 @@ fnc_plant_bomb_server = {
 	if(!isServer)exitWith {0};
 	params ["_player"];
 	removeBackpack _player;
-	private _bombsite = bombsites_at_objective select {_player distance _x < bombdistance} select 0;
+	private _bombsite = ([bombsites_at_objective,[],{player distance _x}] call BIS_fnc_sortBy) select 0;
 	bomb = createVehicle ["SatchelCharge_F", (getPosATL _bombsite) vectorAdd [0 + random 1 - random 1,0 + random 1 - random 1,0], [], 0, "CAN_COLLIDE"];
 	publicVariable "bomb";
 	//on all clients: create action to defuse
@@ -73,13 +73,13 @@ fnc_plant_bomb_server = {
 			//defused
 			["Alert",["The bomb has been defused!"]] remoteExec ["BIS_fnc_showNotification"];
 			sleep 1;
-			[1] remoteExec ["f_fnc_mpEnd",2];
+			[2] remoteExec ["f_fnc_mpEnd",2];
 		}else{
 			//explosion
 			deleteVehicle bomb;
 			bomb = createVehicle ["ModuleExplosive_DemoCharge_F", getPosATL bomb, [], 0, "CAN_COLLIDE"];
 			bomb setDamage 1;
-			[2] remoteExec ["f_fnc_mpEnd",2];
+			[1] remoteExec ["f_fnc_mpEnd",2];
 		};
 	}
 };
@@ -106,10 +106,8 @@ if(isServer)then{
 		{
 			private _current = _x;
 			{
-				private _set = _x;
-				_set = _set apply {_x distance _current};
-				_set sort false;
-				if(_set select 0 < _bombsets_max_dist)exitWith{
+				private _dist = selectMax (_x apply {_x distance _current});
+				if(_dist < _bombsets_max_dist)exitWith{
 					_x pushBack _current;
 					_current = objNull;
 				};
@@ -131,11 +129,26 @@ if(isServer)then{
 			private _marker = createMarker[str _x, _x];
 			_marker setMarkerType "mil_objective";
 			_marker setMarkerSize [0.7, 0.7];
+			_marker setMarkerText (["A","B","C","D"] select _forEachIndex);
 		}foreach _bombsets;
 	};
 
 };
+
+can_place_bomb = false;
 if(hasInterface)then{
+	waitUntil {/*sleep 0.1;*/ !isNil "bombsites_at_objective"};
+
+	[] spawn {
+		while{true}do{
+			//condition can take a long time depending on number of bombsites_at_objective
+			//we don't want to check that every frame.
+			//when testing with 50 bombsites_at_objective, it took 8000/10000 cycles.
+			can_place_bomb = !isNull (unitBackpack player) && ({player distance _x < bombdistance} count bombsites_at_objective) > 0;
+			sleep 0.3;
+		};
+	};
+
 	//adding action to player, because addAction doesnt work for some objects like VR objects, or invisiable objects.
 	//NOTE: condition is checked on each frame!
 	//alternative icons: loadVehicle_ca.paa, gear_ca.paa, unloadVehicle_ca.paa, Obsolete\ui_action_deactivate_ca.paa
@@ -144,8 +157,8 @@ if(hasInterface)then{
 		"Plant bomb", // Title of the action
 		"\a3\ui_f\data\IGUI\Cfg\Actions\loadVehicle_ca.paa", // Idle icon shown on screen
 		"\a3\ui_f\data\IGUI\Cfg\Actions\loadVehicle_ca.paa", // Progress icon shown on screen
-		"!isNull (unitBackpack player) && ({player distance _x < bombdistance} count bombsites_at_objective) > 0", //Condition for the action to be shown
-		"!isNull (unitBackpack player) && ({player distance _x < bombdistance} count bombsites_at_objective) > 0", // Condition for the action to progress
+		"can_place_bomb", //Condition for the action to be shown
+		"can_place_bomb", // Condition for the action to progress
 		{}, // Code executed when action starts
 		{}, // Code executed on every progress tick
 		{

@@ -119,7 +119,7 @@ class Params
 	};
 	class f_param_time_to_explosion
 	{
-		title    = "Time until bomb explodes (in seconds)";
+		title    = "Time until bomb explodes (in seconds after planting)";
 		values[] = {5,15,30,45,60,90,120,180};
 		default  = 45;
 	};
