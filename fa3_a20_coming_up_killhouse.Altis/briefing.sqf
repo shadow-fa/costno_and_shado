@@ -11,6 +11,13 @@ if (!isDedicated && (isNull player)) then
     waitUntil {sleep 0.1; !isNull player};
 };
 
+// ====================================================================================
+//Get marker name and text
+waitUntil {!isNil "server_setup_done"};
+waitUntil {!isNil "objective"};
+waitUntil {!isNil "objective_text"};
+
+_markername = format ["<marker name=""%2"">%1</marker>", objective_text, objective];
 
 // ====================================================================================
 

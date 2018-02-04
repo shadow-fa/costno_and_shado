@@ -1,4 +1,13 @@
 // ============================================================================================
+// Loading Screen
+
+onLoadName = "Coming Up Killhouse";
+onLoadMission = "Made with the F3 Mission Development Framework";
+author = "Costno, Shado'";
+loadScreen = "loadLogo.jpg";
+overviewPicture = "overviewLogo.jpg";
+
+// ============================================================================================
 
 // F3 - Respawn Settings
 // Credits: Please see the F3 online manual (http://www.ferstaberinde.com/f3/en/)
@@ -98,8 +107,8 @@ class Params
 		//0 = random.
 		// ["marker_objective"] call ws_fnc_collectMarkers;
 		title         = "Objective";
-		values[]      = {0,       1,                        2,                        3,                        4,                         5                             };
-		texts[]       = {"Random","Hangar",                 "De_Construction",  "Barren",                 "Helipad",                 "Milhouse"             };
+		values[]      = {0,       1,                        2,                        3,                        4,                         5                          };
+		texts[]       = {"Random","Hangar",                 "De-Construction",        "Barren",                 "Helipad",                 "Milhouse"                 };
 		markernames[] = {"",      "marker_objective_hangar","marker_objective_kavala","marker_objective_barren","marker_objective_helipad","marker_objective_milhouse"};
 		default       = 0;
 	};

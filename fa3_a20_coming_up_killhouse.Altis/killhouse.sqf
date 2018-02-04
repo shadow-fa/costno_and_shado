@@ -4,7 +4,7 @@ removeBackpack player;
 player addBackpack "B_AssaultPack_blk";
 
 TODO defuse kit?
-TODO FUTURE or just write in briefing: defusers shouldnt be able to pick up backpack.
+TODO FUTURE: defusers shouldnt be able to pick up backpack.
 
 
 */
@@ -47,13 +47,18 @@ if(isServer)then{
 	if(f_param_objective != 0)then{
 		objective = _objectives select (f_param_objective-1);
 	};
+	//Also get the text for the briefing
+	objective_text = (getArray (_param >> "texts")) select ((getArray (_param >> "markernames")) find objective);
+	//--------------------------------------------------------------------------
+	//Filter bombsites based on selected objective
+	_bombsites = _bombsites select {_x inArea objective};
 	//--------------------------------------------------------------------------
 	//disable spawn-helper-units
 	{
 		_x disableAI "MOVE";
 		_x disableAI "ALL";
 	} forEach allUnits; //(allUnits - playableUnits)
-
+	//--------------------------------------------------------------------------
 	//set up player variables
 	players = [];
 	private _players_blu = playableUnits select {side _x == BLUFOR};
@@ -111,6 +116,7 @@ if(isServer)then{
 	//setup done
 	server_setup_done = true;
 	publicVariable "objective";
+	publicVariable "objective_text";
 	publicVariable "players";
 	publicVariable "o_spawnpoints";
 	publicVariable "server_setup_done";
@@ -129,11 +135,7 @@ if(isServer)then{
 
 	//bomb setup for server (because it has to happen after !isNil objective)
 	//and we can't wait because we need it to happen while still on map screen before loading in
-	_bombsites_at_objective = [];
-	{
-		if(_x inArea objective)then{_bombsites_at_objective pushBack _x};
-	} forEach _bombsites;
-	[_bombsites_at_objective] call compile preprocessFileLineNumbers "bombs.sqf";
+	[_bombsites] call compile preprocessFileLineNumbers "bombs.sqf";
 };
 
 //------------------------------------------------------------------------------
@@ -143,9 +145,9 @@ if(hasInterface)then{
 	waitUntil {sleep 0.05; (time > 0)};
 	startLoadingScreen ["Loading"];
 
-	waitUntil {/*sleep 0.1;*/ !isNil "server_setup_done"};
-	waitUntil {/*sleep 0.1;*/ server_setup_done};
-	waitUntil {/*sleep 0.1;*/ (time > 0.2)};
+	waitUntil {!isNil "server_setup_done"};
+	waitUntil {server_setup_done};
+	waitUntil {(time > 0.2)};
 
 	//bombs event handler + function definitions: (parameter doesn't matter here)
 	if(!isServer)then{
@@ -159,11 +161,11 @@ if(hasInterface)then{
 	private _sleep_time = 0.5;
 	private _timeout = (2*60)/_sleep_time;
 	private _i = 0;
-	while {_i < _timeout && !(player getVariable ["playerMoved", false])  } do {
+	while {_i <= _timeout && !(player getVariable ["playerMoved", false])  } do {
 		[player] call fnc_setPlayerPos;
 		sleep _sleep_time;
 		_i = _i + 1;
-		if(_i == 30)exitWith{
+		if(_i == _timeout)exitWith{
 			systemChat format ["ERROR 6: Can't setPos for player %1 for some reason.", name player];
 			0
 		};

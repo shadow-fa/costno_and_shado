@@ -25,19 +25,6 @@ Bomb is in a backpack. T who is carrying bomb can plant it. Ts will plant and mu
 
 // ====================================================================================
 
-// NOTES: EXECUTION
-// The code below creates the execution sub-section of notes.
-
-_exe = player createDiaryRecord ["diary", ["Execution",format ["
-<br/>
-<font size='18'>COMMANDER'S INTENT</font>
-<br/>
-Destroy bombsite A or B at %1
-<br/><br/>
-", f_param_objective]]];
-
-// ====================================================================================
-
 // NOTES: MISSION
 // The code below creates the mission sub-section of notes.
 
@@ -45,8 +32,9 @@ _mis = player createDiaryRecord ["diary", ["Mission",format ["
 <br/>
 <font size='18'>COMMANDER'S INTENT</font>
 <br/>
-Destroy bombsite A or B at %1
+Destroy bombsite A or B at %1.<br/>
+The bombsites may be marked with orange or white markers on the ground.<br/>
 <br/><br/>
-", f_param_objective]]];
+", _markername]]];
 
 // ====================================================================================

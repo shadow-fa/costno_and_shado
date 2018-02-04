@@ -233,7 +233,7 @@ _subgraphs = _subgraphs select {(count _x) >= _tmp};
 //remove subgraphs smaller than _num_objectives,
 /*
 //iff we have at least as many subgraphs as clusters afterwards
-//NOTE: this is theoretically wrong, becuse it might still result in less
+//NOTE: this is theoretically wrong, because it might still result in less
 //      subgraphs than clusters because of min-cluster-distance
 private _tmp = _subgraphs select {(count _x) >= _num_objectives};
 if (count _tmp >= _clusters) then {
@@ -241,7 +241,7 @@ if (count _tmp >= _clusters) then {
 };
 */
 //------------------------------------------------------------------------------
-//prepare variabled for clusters:
+//prepare variables for clusters:
 _clusters = _clusters min (count _subgraphs);
 
 private _subgraphs_means = [];

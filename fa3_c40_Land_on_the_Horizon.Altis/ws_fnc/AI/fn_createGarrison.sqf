@@ -100,9 +100,11 @@ if (count _classes == 0) then {
 };
 
 // Collect buildings and assign building positions
-_buildings    = [_area,_radius,true,true] call ws_fnc_collectBuildings;
-_buildings_bl = [_area,_radius_bl,true,true] call ws_fnc_collectBuildings;
-_buildings = _buildings - _buildings_bl;
+_buildings = [_area,_radius,true,true] call ws_fnc_collectBuildings;
+if (_radius_bl > 0) then {
+	_buildings_bl = [_area,_radius_bl,true,true] call ws_fnc_collectBuildings;
+	_buildings = _buildings - _buildings_bl;
+};
 
 if (count _buildings == 0) exitWith {["ws_fnc_createGarrison DBG: no buildings found at ",[_area],""] call ws_fnc_debugText};
 
