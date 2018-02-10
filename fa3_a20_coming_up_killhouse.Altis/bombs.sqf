@@ -2,7 +2,7 @@
 
 if(f_param_time_to_explosion == 0)exitWith {0};
 //------------------------------------------------------------------------------
-bombdistance = 2.4; //how far the player can be away for the action
+bombdistance = 2.2; //how far the player can be away for the action
 duration_defusing = 5;
 duration_planting = 5;
 

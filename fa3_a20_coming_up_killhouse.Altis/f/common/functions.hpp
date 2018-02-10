@@ -19,11 +19,6 @@ class F // Defines the "owner"
 		file = "f\assignGear";
 		class assignGear{};
 	};
-	class setGroupID
-	{
-		file = "f\setGroupID";
-		class setGroupID{};
-	};
 	class missionConditions
 	{
 		file = "f\missionConditions";
@@ -32,24 +27,6 @@ class F // Defines the "owner"
 		class SetWeather{};
 		class SetWind{};
 	};
-	class cache
-	{
-		file = "f\cache";
-		class cInit {};
-		class cTracker {};
-		class gCache {};
-		class gUncache {};
-	};
-	class groupMarkers {
-		file = "f\groupMarkers";
-		class localGroupMarker{};
-		class localSpecialistMarker{};
-	};
-	class authorisedCrew
-	{
-		file = "f\authorisedCrew";
-		class authorisedCrewCheck {};
-	};
 	class FTMemberMarkers
 	{
 		file = "f\FTMemberMarkers";
@@ -57,31 +34,10 @@ class F // Defines the "owner"
 		class GetMarkerColor{};
 		class LocalFTMarkerSync{};
 	};
-	class bodyRemoval
-	{
-		file = "f\removeBody";
-		class removeBody{};
-	};
-	class setAISkill
-	{
-		file = "f\setAISKill";
-		class setAISKill{};
-	};
-	class mapClickTeleport
-	{
-		file = "f\mapClickTeleport";
-		class mapClickTeleportUnit{};
-		class mapClickTeleportGroup{};
-	};
 	class nametag
 	{
 		file = "f\nametag";
 		class drawNameTag{};
-	};
-	class preMount
-	{
-		file = "f\preMount";
-		class mountGroups{};
 	};
 	class zeus
 	{
@@ -97,11 +53,6 @@ class F // Defines the "owner"
 		class tfr_addRadios{};
 		class tfr_setRadioFrequencies{};
 		class tfr_configureSpectatorChat{};
-	};
-	class safeStart
-	{
-		file = "f\safeStart";
-		class safety{};
 	};
 	class woundingsystem
 	{

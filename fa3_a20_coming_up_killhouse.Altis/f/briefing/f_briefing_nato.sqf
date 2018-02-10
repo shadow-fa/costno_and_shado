@@ -32,7 +32,7 @@ _mis = player createDiaryRecord ["diary", ["Mission",format ["
 <br/>
 <font size='18'>COMMANDER'S INTENT</font>
 <br/>
-Destroy bombsite A or B at %1.<br/>
+Defend bombsite A and B at %1.<br/>
 The bombsites may be marked with orange or white markers on the ground.<br/>
 <br/><br/>
 ", _markername]]];

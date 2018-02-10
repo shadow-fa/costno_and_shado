@@ -72,40 +72,6 @@ if (_unitfaction in ["blu_f","blu_t_f"]) exitwith {
 
 // ====================================================================================
 
-// BRIEFING: FIA
-// The following block of code executes only if the player is in a FIA slot; it
-// automatically includes a file which contains the appropriate briefing data.
-
-if (_unitfaction in ["blu_g_f","ind_g_f","opf_g_f"]) exitwith {
-
-#include "f\briefing\f_briefing_fia.sqf"
-
-// DEBUG
-	if (f_param_debugMode == 1) then
-	{
-	player sideChat format ["DEBUG (briefing.sqf): Briefing for %1 slot selected.",_unitfaction];
-	};
-};
-
-// ====================================================================================
-
-// BRIEFING: GENDARMERIE
-// The following block of code executes only if the player is in a gendarmerie slot; it
-// automatically includes a file which contains the appropriate briefing data.
-
-if (_unitfaction in ["blu_gen_f"]) exitwith {
-
-#include "f\briefing\f_briefing_gendarmerie.sqf"
-
-// DEBUG
-	if (f_param_debugMode == 1) then
-	{
-	player sideChat format ["DEBUG (briefing.sqf): Briefing for %1 slot selected.",_unitfaction];
-	};
-};
-
-// ====================================================================================
-
 // BRIEFING: OPFOR > CSAT
 // The following block of code executes only if the player is in a CSAT & CSAT (Pacific) slot; it
 // automatically includes a file which contains the appropriate briefing data.
@@ -120,91 +86,6 @@ if (_unitfaction in ["opf_f","opf_t_f"]) exitwith {
 	player sideChat format ["DEBUG (briefing.sqf): Briefing for %1 slot selected.",_unitfaction];
 	};
 };
-
-// ====================================================================================
-
-// BRIEFING: INDEPENDENT > AAF
-// The following block of code executes only if the player is in a AAF
-// slot; it automatically includes a file which contains the appropriate briefing data.
-
-if (_unitfaction in ["ind_f"]) exitwith {
-
-#include "f\briefing\f_briefing_aaf.sqf"
-
-// DEBUG
-	if (f_param_debugMode == 1) then
-	{
-	player sideChat format ["DEBUG (briefing.sqf): Briefing for %1 slot selected.",_unitfaction];
-	};
-};
-
-// ====================================================================================
-
-// BRIEFING: INDEPENDENT > SYNDIKAT
-// The following block of code executes only if the player is in a Syndikat
-// slot; it automatically includes a file which contains the appropriate briefing data.
-
-if (_unitfaction in ["ind_c_f"]) exitwith {
-
-#include "f\briefing\f_briefing_syndikat.sqf"
-
-// DEBUG
-	if (f_param_debugMode == 1) then
-	{
-	player sideChat format ["DEBUG (briefing.sqf): Briefing for %1 slot selected.",_unitfaction];
-	};
-};
-
-// ====================================================================================
-
-// BRIEFING: INDEPENDENT > CTRG
-// The following block of code executes only if the player is in a Syndikat
-// slot; it automatically includes a file which contains the appropriate briefing data.
-
-if (_unitfaction in ["blu_ctrg_f"]) exitwith {
-
-#include "f\briefing\f_briefing_ctrg.sqf"
-
-// DEBUG
-	if (f_param_debugMode == 1) then
-	{
-	player sideChat format ["DEBUG (briefing.sqf): Briefing for %1 slot selected.",_unitfaction];
-	};
-};
-
-// ====================================================================================
-
-// BRIEFING: CIVILIAN
-// The following block of code executes only if the player is in a CIVILIAN
-// slot; it automatically includes a file which contains the appropriate briefing data.
-
-if (_unitfaction in ["civ_f"]) exitwith {
-
-#include "f\briefing\f_briefing_civ.sqf"
-
-// DEBUG
-	if (f_param_debugMode == 1) then
-	{
-	player sideChat format ["DEBUG (briefing.sqf): Briefing for %1 slot selected.",_unitfaction];
-	};
-};
-
-// ====================================================================================
-
-// BRIEFING: ZEUS
-// The following block of code executes only if the player is in a ZEUS (Gamelogic) slot; it automatically includes a file which contains the appropriate briefing data.
-
-if (_unitfaction == "") exitwith {
-
-#include "f\briefing\f_briefing_zeus.sqf"
-
-// DEBUG
-	if (f_param_debugMode == 1) then
-	{
-	player sideChat format ["DEBUG (briefing.sqf): Briefing for %1 slot selected.",_unitfaction];
-	};
-};
-
 
 // ====================================================================================
 
