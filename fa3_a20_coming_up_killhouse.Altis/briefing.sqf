@@ -8,7 +8,7 @@ if (!hasInterface) exitWith {}; //Exit if not a player.
 
 if (!isDedicated && (isNull player)) then
 {
-    waitUntil {sleep 0.1; !isNull player};
+	waitUntil {sleep 0.1; !isNull player};
 };
 
 // ====================================================================================

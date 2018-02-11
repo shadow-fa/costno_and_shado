@@ -1,10 +1,10 @@
-//NOTE: this script assumes that there's only 1 backpack
-
-if(f_param_time_to_explosion == 0)exitWith {0};
 //------------------------------------------------------------------------------
+// global variables
 bombdistance = 2.2; //how far the player can be away for the action
 duration_defusing = 5;
 duration_planting = 5;
+//------------------------------------------------------------------------------
+// bomb functions
 
 fnc_remove_actions = {
 	//TODO. make it not ugly
@@ -86,61 +86,101 @@ fnc_plant_bomb_server = {
 		};
 	}
 };
+
 //------------------------------------------------------------------------------
-//if(!isServer)exitWith {0}; //non servers stop after function definitions!
+fnc_setPlayerPos = {
+	params ["_player"];
 
-if(isNil "server_setup_done")exitWith{systemChat "ERROR 100"; 0};
-if(!server_setup_done)       exitWith{systemChat "ERROR 101"; 0};
-//waitUntil {sleep 0.1; !isNil "server_setup_done"}; //wait for other script
-//waitUntil {sleep 0.1; server_setup_done};
+	private _player_index = players find _player;
+	if( _player_index == -1 )exitWith{systemChat format ["ERROR 2. You (%1) are not a player. Or you're a JIP player?",name _player];0};
+	private _spawnpoint = o_spawnpoints select _player_index;
 
-if(isServer)then{
+	_player setPos (_spawnpoint select 0);
+	_player setDir (_spawnpoint select 1);
 
-	params [["_bombsites",[],[[]]]];
-	bombsites_at_objective = _bombsites;
-	publicVariable "bombsites_at_objective";
+	sleep 0.05; //to be on the safe side
+	if( (getPos _player) distance2d (_spawnpoint select 0) < 5 )then{
+		_player setVariable ["playerMoved", true, true];
+	};
+};
+//------------------------------------------------------------------------------
+fnc_setPlayerPosLoopClient = {
+	waitUntil {!isNil "server_setup_done"};
+	waitUntil {!isNil "players"};
+	waitUntil {!isNil "o_spawnpoints"};
+
+	//not sure this elaborate mechanism is needed.
+	//But setPos only works if player actually is loaded in. (maybe time > 0.1 would be enough)
+	private _sleep_time = 0.3;
+	private _timeout = (2*60)/_sleep_time;
+	private _i = 0;
+	while { _i <= _timeout && !(player getVariable ["playerMoved", false]) } do {
+		[player] call fnc_setPlayerPos;
+		uiSleep _sleep_time;
+		_i = _i + 1;
+		if(_i == _timeout)exitWith{
+			systemChat format ["ERROR 6: Can't setPos for player %1 for some reason.", name player];
+			0
+		};
+	};
+};
+//------------------------------------------------------------------------------
+fnc_bombSiteMarkers = {
+	if(!isServer)exitWith{};
+	if(f_param_show_bombsites != 1)exitWith{};
+
+	//[bombsites_at_objective] call fnc_bombSiteMarkers
+	params [
+		["_bombsites",[],[[]]],
+		["_bombsets_max_dist", 15, [0]]
+	];
 
 	//marking bombsites on map:
-	if(f_param_show_bombsites == 1)then{
-		private _bombsets = [];
-		private _bombsets_max_dist = 15;
-		//add new entry to _bombsets if distance to other bombsites is bigger than _bombsets_max_dist
-		//otherwise add it to its bombset
+	private _bombsets = [];
+	//add new entry to _bombsets if distance to other bombsites is bigger than _bombsets_max_dist
+	//otherwise add it to its bombset
+	{
+		private _current = _x;
 		{
-			private _current = _x;
-			{
-				private _dist = selectMax (_x apply {_x distance _current});
-				if(_dist < _bombsets_max_dist)exitWith{
-					_x pushBack _current;
-					_current = objNull;
-				};
-			} forEach _bombsets;
-			if(!isNull _current)then{
-				_bombsets pushBack [_current];
+			private _dist = selectMax (_x apply {_x distance _current});
+			if(_dist < _bombsets_max_dist)exitWith{
+				_x pushBack _current;
+				_current = objNull;
 			};
-		} forEach bombsites_at_objective;
-		//get average position
-		_bombsets = _bombsets apply{
-			private _pos = [0,0,0];
-			{
-				_pos = _pos vectorAdd position _x;
-			}count(_x);
-			_pos vectorMultiply 1/(count _x)
+		} forEach _bombsets;
+		if(!isNull _current)then{
+			_bombsets pushBack [_current];
 		};
-		//create marker
+	} forEach _bombsites;
+	//get average position
+	_bombsets = _bombsets apply{
+		private _pos = [0,0,0];
 		{
-			private _marker = createMarker[str _x, _x];
-			_marker setMarkerType "mil_objective";
-			_marker setMarkerSize [0.7, 0.7];
-			_marker setMarkerText (["A","B","C","D"] select _forEachIndex);
-		}foreach _bombsets;
+			_pos = _pos vectorAdd position _x;
+		}count(_x);
+		_pos vectorMultiply 1/(count _x)
 	};
-
+	//create marker
+	{
+		private _marker = createMarker[str _x, _x];
+		_marker setMarkerType "mil_objective";
+		_marker setMarkerSize [0.7, 0.7];
+		_marker setMarkerText (["A","B","C","D"] select _forEachIndex);
+	}foreach _bombsets;
 };
 
-can_place_bomb = false;
-if(hasInterface)then{
-	waitUntil {/*sleep 0.1;*/ !isNil "bombsites_at_objective"};
+
+//------------------------------------------------------------------------------
+
+fnc_addActions = {
+	if (f_param_time_to_explosion == 0) exitWith {0};
+	if (!hasInterface) exitWith {};
+
+	can_place_bomb = false;
+
+	waitUntil {!isNil "server_setup_done"};
+	waitUntil {server_setup_done};
+	waitUntil {!isNil "bombsites_at_objective"};
 
 	//change bombsite texture from red to transparent:
 	//bombsites_at_objective
@@ -183,4 +223,29 @@ if(hasInterface)then{
 		false // Show in unconscious state
 	] call BIS_fnc_holdActionAdd;
 };
-0
+
+//------------------------------------------------------------------------------
+fnc_missionStartTimer = {
+	if(!hasInterface) exitWith {};
+	waitUntil {!(isNull (findDisplay 46))}; 
+
+	titleRsc ["TimerText", "PLAIN", 0, true];
+	disableSerialization;
+	private _control = uiNamespace getVariable "TimerTextDisplay" displayCtrl -1;
+
+	_control ctrlSetText "Please wait for everyone to load in.";
+
+	waitUntil {!isNil "serverStartTime" && {serverStartTime > 0}};
+
+	//player enableSimulation false;
+	waitUntil{
+		uiSleep 0.2;
+		_control ctrlSetText format ["Round starting in %1 seconds", ceil (serverStartTime - serverTime)];
+		serverTime > serverStartTime
+	};
+
+	_control ctrlSetText "";
+	//player enableSimulation true;
+
+};
+//------------------------------------------------------------------------------

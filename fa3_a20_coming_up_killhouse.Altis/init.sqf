@@ -97,4 +97,4 @@ f_script_briefing = [] execVM "briefing.sqf";
 
 // ====================================================================================
 
-[] execVM "killhouse.sqf";
+[] execVM "custom\init_mission.sqf";

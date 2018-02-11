@@ -1,3 +1,9 @@
+
+//------------------------------------------------------------------------------
+[] call compile preprocessFileLineNumbers "custom\functions.sqf";
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
 /*
 player allowDamage false;
 removeBackpack player;
@@ -5,33 +11,25 @@ player addBackpack "B_AssaultPack_blk";
 
 TODO defuse kit?
 TODO FUTURE: defusers shouldnt be able to pick up backpack.
-
+TODO rounds. no cas cap, no calling of mp_end, what about damage from bomb? damaged killhouses, etc
+TODO scoretable:
+	blufor 2 : 1 opfor
+	1 - blufor (CT)
+	2 - blufor (T)
+	3 - opfor (T)
 
 */
 //------------------------------------------------------------------------------
 //SETTINGS:
 private _spawn_object_types = ["CAManBase"]; //needs to be an array
 
-//private _bombsites = [bombsite,bombsite_1,...];
-private _bombsites = ["bombsite"] call ws_fnc_collectObjectsNum;
+//private bombsites_at_objective = [bombsite,bombsite_1,...];
+bombsites_at_objective = ["bombsite"] call ws_fnc_collectObjectsNum;
 
 private _wall_types = ["Land_Shoot_House_Wall_F"]; //for drawing walls when f_param_show_walls is 1
-//------------------------------------------------------------------------------
-fnc_setPlayerPos = {
-	params ["_player"];
 
-	private _player_index = players find _player;
-	if( _player_index == -1 )exitWith{systemChat format ["ERROR 2. You (%1) are not a player. Or you're a JIP player?",name _player];0};
-	private _spawnpoint = o_spawnpoints select _player_index;
-
-	_player setPos (_spawnpoint select 0);
-	_player setDir (_spawnpoint select 1);
-
-	sleep 0.05; //to be on the safe side
-	if( (getPos _player) distance2d (_spawnpoint select 0) < 5 )then{
-		_player setVariable ["playerMoved", true, true];
-	};
-};
+timeout = 20; //for loading into the mission
+safestart_timer = 5;
 //------------------------------------------------------------------------------
 //server setup
 if(isServer)then{
@@ -51,7 +49,7 @@ if(isServer)then{
 	objective_text = (getArray (_param >> "texts")) select ((getArray (_param >> "markernames")) find objective);
 	//--------------------------------------------------------------------------
 	//Filter bombsites based on selected objective
-	_bombsites = _bombsites select {_x inArea objective};
+	bombsites_at_objective = bombsites_at_objective select {_x inArea objective};
 	//--------------------------------------------------------------------------
 	//disable spawn-helper-units
 	{
@@ -67,7 +65,7 @@ if(isServer)then{
 	players append _players_red;
 	//get objective and objective data
 	private _o_pos  = getMarkerPos objective;
-	private _o_size = ((getMarkerSize objective)select 0) max ((getMarkerSize objective)select 0);
+	private _o_size = ((getMarkerSize objective)select 0) max ((getMarkerSize objective)select 1);
 	//setting up player positions
 	private _o_man  = (nearestObjects [_o_pos, _spawn_object_types, _o_size]) - players;
 	private _o_men_blu = _o_man select {side _x == BLUFOR};
@@ -81,8 +79,8 @@ if(isServer)then{
 	if(count players == 0)exitWith{systemChat "ERROR 5. Script needs to run in multiplayer mode.";0};
 	if(count o_spawnpoints != count players)exitWith{systemChat "ERROR 1. There have to be the same number of playableUnits as there are spawn positions";0};
 
-	//"remove" objective marker
-	{_x setMarkerAlpha 0} forEach (_objectives-[objective]);
+	//"remove" objective markers
+	{_x setMarkerAlpha 0} forEach _objectives; //(_objectives-[objective])
 
 	//execute marker-text (e.g. so that it can set f_param_show_walls)
 	call compile (markerText objective);
@@ -112,17 +110,10 @@ if(isServer)then{
 		}forEach _walls;
 	};
 
-
-	//setup done
-	server_setup_done = true;
-	publicVariable "objective";
-	publicVariable "objective_text";
-	publicVariable "players";
-	publicVariable "o_spawnpoints";
-	publicVariable "server_setup_done";
+	//create marker for bombsites
+	[bombsites_at_objective] call fnc_bombSiteMarkers;
 
 	//move all AI that aren't players yet
-	//maybe we don't want this: e.g. reinforcements?
 	[] spawn {
 		sleep 2;
 		{
@@ -132,48 +123,70 @@ if(isServer)then{
 		} forEach players;
 	};
 
+	//setup done
+	server_setup_done = true;
+	publicVariable "objective";
+	publicVariable "objective_text";
+	publicVariable "bombsites_at_objective";
+	publicVariable "players";
+	publicVariable "o_spawnpoints";
+	publicVariable "server_setup_done";
 
-	//bomb setup for server (because it has to happen after !isNil objective)
-	//and we can't wait because we need it to happen while still on map screen before loading in
-	[_bombsites] call compile preprocessFileLineNumbers "bombs.sqf";
+
+	//mission start timer
+	[] spawn {
+		//disable simulation
+		{
+			_x enableSimulationGlobal false;
+			_x allowDamage false;
+		} forEach players;
+
+		//wait for all players to have teleported
+		waitUntil {sleep 0.05; ( time > timeout || {_x getVariable ["playerMoved",  false]} count playableUnits == count playableUnits )};
+		waitUntil {sleep 0.05; ( time > timeout || {_x getVariable ["playerLoaded", false]} count playableUnits == {isPlayer _x} count playableUnits )};
+
+		serverStartTime = serverTime + safestart_timer;
+		publicVariable "serverStartTime";
+		
+		//client timer will start now
+		
+		//wait
+		waitUntil{ uiSleep 0.05; serverTime > serverStartTime };
+		
+		//re-enable simulation
+		{
+			_x enableSimulationGlobal true;
+			_x allowDamage true;
+		} forEach players;
+	};
 };
 
 //------------------------------------------------------------------------------
 
 //client setup: just calling fnc_setPlayerPos basically
 if(hasInterface)then{
-	waitUntil {sleep 0.05; (time > 0)};
-	startLoadingScreen ["Loading"];
+	[] spawn {
+		waitUntil {!(isNull (findDisplay 46))};
+		waitUntil {!isNull player && {player == player}};
+		waitUntil {sleep 0.05; (time > 0)};
+		//startLoadingScreen ["Loading"]; //NOTE: only use uiSleep within the loading screen!
 
-	waitUntil {!isNil "server_setup_done"};
-	waitUntil {server_setup_done};
-	waitUntil {(time > 0.2)};
+		waitUntil {!isNil "server_setup_done"};
+		waitUntil {!(isNull (findDisplay 46))};
+		waitUntil {(time > 0.1)};
 
-	//bombs event handler + function definitions: (parameter doesn't matter here)
-	if(!isServer)then{
-		//because server already executed this.
-		[] call compile preprocessFileLineNumbers "bombs.sqf";
+		handle_setPos = [] spawn fnc_setPlayerPosLoopClient;
+		[] spawn fnc_addActions;
+		[] spawn fnc_missionStartTimer;
+		waitUntil { scriptDone handle_setPos };
+
+		waitUntil {( time > timeout || {! (cursorObject isEqualTo objNull) || {! ((getCursorObjectParams select 0) isEqualTo objNull)}})};
+
+		player setVariable ["playerLoaded", true, true];
+
+		//waitUntil {uiSleep 0.05; ( time > 20 || {_x getVariable ["playerMoved", false]} count playableUnits == count playableUnits )};
+		//endLoadingScreen;
 	};
-
-
-	//not sure this elaborate mechanism is needed.
-	//But setPos only works if player actually is loaded in. (maybe time > 0.1 would be enough)
-	private _sleep_time = 0.5;
-	private _timeout = (2*60)/_sleep_time;
-	private _i = 0;
-	while {_i <= _timeout && !(player getVariable ["playerMoved", false])  } do {
-		[player] call fnc_setPlayerPos;
-		sleep _sleep_time;
-		_i = _i + 1;
-		if(_i == _timeout)exitWith{
-			systemChat format ["ERROR 6: Can't setPos for player %1 for some reason.", name player];
-			0
-		};
-	};
-
-	//need to use uIsleep within loadingScreen
-	waitUntil {uiSleep 0.05; ( time > 20 || {_x getVariable ["playerMoved", false]} count playableUnits == count playableUnits )};
-	endLoadingScreen;
 };
 
 0

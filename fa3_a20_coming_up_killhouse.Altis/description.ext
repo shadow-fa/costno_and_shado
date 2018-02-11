@@ -307,3 +307,39 @@ class CfgFunctions
 
 	#include "ws_fnc\config.hpp"
 };
+
+// ============================================================================================
+
+class RscTitles {
+	class TimerText {
+		idd = -1;
+		duration = 999999999;
+		onLoad = "uiNamespace setVariable [""TimerTextDisplay"", _this select 0];";
+		//fadein = 0;
+		//fadeout = 0;
+		//movingEnable = 0;
+		class controls {
+			class ExampleControl {
+				idc = -1; //control reference 
+				type = 0;
+				//style = 0;
+				style = 0x02;
+				x = (0.50-0.5/2) * safezoneW + safezoneX;
+				y = safezoneY;
+				w = 0.5 * safezoneW;
+				h = 0.05 * safezoneH;
+				//sizeEx = 0.1;
+				SizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 2)";
+				colorBackground[] = {0,0,0,0};
+				colorText[] = {1,1,1,1};
+				shadow = 2;
+				//font = "EtelkaNarrowMediumPro";
+				font = "PuristaBold";
+				text = "";
+			};
+		};
+	};
+};
+
+// ============================================================================================
+	
